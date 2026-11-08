@@ -12,6 +12,11 @@ class BaseModel(models.Model):
 
     objects = BaseModelManager()
 
+    def delete(self, using=None, keep_parents=False):
+        self.deleted = True
+        self.save()
+        #this method makes the deleted ones be kept in database with a deleted true flag
+
     class Meta:
         abstract = True
 
