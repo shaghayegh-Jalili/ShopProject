@@ -1,10 +1,28 @@
 from django.contrib.auth.models import User
 from django.db import models
 
-class Category(models.Model):
-    title = models.CharField(max_length=100)
+class BaseModelManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(deleted=False)
 
-class Product(models.Model):
+class BaseModel(models.Model):
+    created = models.DateTimeField(auto_now_add=True)
+    deleted = models.BooleanField(default=False, editable=False)
+    updated = models.DateTimeField(auto_now=True)
+
+    objects = BaseModelManager()
+
+    class Meta:
+        abstract = True
+
+
+class Category(BaseModel):
+    title = models.CharField(max_length=100)
+    def __str__(self):
+        return self.title
+
+
+class Product(BaseModel):
     title = models.CharField(max_length=100)
     content = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -12,27 +30,29 @@ class Product(models.Model):
     quantity = models.PositiveIntegerField()
     status = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True) # the difference between auto now and auto now add is that auto now add is unchangeable
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
+    def __str__(self):
+        return self.title
 
-class Cart(models.Model):
+class Cart(BaseModel):
     quantity = models.PositiveIntegerField()
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-class Order(models.Model):
+class Order(BaseModel):
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     status = models.BooleanField(null=True)
     created = models.DateTimeField(auto_now_add=True)
 
-class OrderProduct(models.Model):
+class OrderProduct(BaseModel):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.SET_DEFAULT, default=None, null=True)
     quantity = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     created = models.DateTimeField(auto_now_add=True)
 
-class PaymentLog(models.Model):
+class PaymentLog(BaseModel):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     created = models.DateTimeField(auto_now_add=True)
     user_id = models.PositiveIntegerField()
